@@ -5,11 +5,13 @@ using System.Net.Sockets;
 
 namespace UnitMath
 {
-    public enum UnitDisplayFormat { RootTree, FirstChildren, Flattened, Simplified }
+    public enum UnitDisplayFormat { RootTree, FirstChildren, Flattened, Simplified, FlattenedAndSimplified }
 
     public class Unit : IEnumerable<Unit>, IEquatable<Unit>
 	{
 		private readonly IEnumerable<Unit> _units;
+
+	    public static string UndefinedSymbol = "<undefined>";
 
 	    public string Symbol { get; private set; }
 	    public decimal Power { get; private set; }
@@ -20,7 +22,7 @@ namespace UnitMath
 		{
 		    Symbol = symbol;
 		    Power = power;
-
+            
 		    _units = units ?? Enumerable.Empty<Unit>();
 			_hashCode = GetHashCode(this);
 		}
@@ -32,7 +34,7 @@ namespace UnitMath
 			
 		public static IEnumerable<Unit> ChangePower(IEnumerable<Unit> units, decimal oldPower, decimal newPower)
 		{
-			foreach (var u in units) yield return new Unit(u.Symbol, u.Power * newPower / oldPower, ChangePower(u, oldPower, newPower));
+		    return units.Select(u => new Unit(u.Symbol, u.Power * newPower / oldPower, ChangePower(u, oldPower, newPower)));
 		}
 		
 		private string ToString2()
@@ -75,7 +77,10 @@ namespace UnitMath
                     return Flatten().ToString2();
                 case UnitDisplayFormat.Simplified:
                     return Simplify().ToString2();
-	            default:
+                case UnitDisplayFormat.FlattenedAndSimplified:
+                    return Flatten().Simplify().ToString2();
+
+                default:
 	                throw new ArgumentOutOfRangeException(nameof(format), format, null);
 	        }
 
@@ -88,7 +93,18 @@ namespace UnitMath
 		
 		public static IEnumerable<Unit> Flatten(Unit unit)
 		{
-			return unit.SelectMany(Flatten);
+		    if (!unit.Any()) yield return unit;
+		    else
+		    {
+		        foreach (var units in unit)
+		        {
+		            foreach (var units2 in Flatten(units))
+		            {
+		                yield return units2;
+		            }
+		        }
+		    }
+            
 		}
 
 	    public Unit Flatten()
@@ -132,7 +148,7 @@ namespace UnitMath
 			var units = Multiply(lhs.Concat(rhs));
 			return lhs.Symbol == rhs.Symbol ?
 				new Unit(lhs.Symbol, lhs.Power + rhs.Power, units) : 
-				new Unit("<undefined>", 1, units);
+				new Unit(UndefinedSymbol, 1, units);
 		}
 		
 		public static Unit operator /(Unit lhs, Unit rhs)

@@ -80,7 +80,7 @@ namespace UnitMath
 	            "", "kg", "m", "s", "A", "K", "mol",
 	            "N = kg*m/s^2", "J = kg*m^2/s^2", "W = kg*m^2/s^3",
 	            "V = kg*m^2/(s^3*A^1)", "F = s^4*A^2/(kg*m^2)", "Ω = kg*m^2/(s^3*A^2)",
-	            "S = s^3*A^2/(kg*m^2)", "Pa = kg/(m*s^2)", "Pas = kg(m*s)",
+	            "S = s^3*A^2/(kg*m^2)", "Pa = N/(m^2)", "Pas = kg(m*s)",
 	            "C = A*s", "Hz = 1/s"
 	        };
 	    }
@@ -97,7 +97,7 @@ namespace UnitMath
                 case 0:
                     return new Unit("");
                 case 1:
-                    if (data[0].Contains('*') || data[0].Contains('/')) return new Unit("<undefined>", 1, ParseUnits(data[0]));
+                    if (data[0].Contains('*') || data[0].Contains('/')) return new Unit(Unit.UndefinedSymbol, 1, ParseUnits(data[0]));
                     return Parse(data[0]);
             }
 
