@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Net.Sockets;
 
 namespace UnitMath
 {
@@ -46,9 +45,9 @@ namespace UnitMath
 							   .Aggregate();
 			
 			var negative = this.Where(u => u.Power < 0)
-							   	.OrderBy(u => u.Power)
-							    .Select(u => u.Invert())
-								.Aggregate();
+							   .OrderBy(u => u.Power)
+							   .Select(u => u.Invert())
+							   .Aggregate();
 			
 			if (this.Count(u => u.Power < 0) > 1) negative = "(" + negative + ")";
 			
@@ -81,9 +80,8 @@ namespace UnitMath
                     return Flatten().Simplify().ToString2();
 
                 default:
-	                throw new ArgumentOutOfRangeException(nameof(format), format, null);
+	                throw new ArgumentOutOfRangeException("format", format, null);
 	        }
-
 	    }
 
 	    public Unit Simplify()
@@ -121,7 +119,7 @@ namespace UnitMath
 	    
 	    public static IEnumerable<Unit> Invert(IEnumerable<Unit> units)
 	    {
-	    	foreach (var u in units) yield return new Unit(u.Symbol, -u.Power, Invert(u));
+	        return units.Select(u => new Unit(u.Symbol, -u.Power, Invert(u)));
 	    }
 	    
 	    public Unit Invert()

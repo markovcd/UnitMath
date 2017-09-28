@@ -70,10 +70,10 @@ namespace UnitMath
 
 	    public void LoadFromLines(IEnumerable<string> lines)
 	    {
-	        foreach (var line in lines) Add(ParseLine(line));
+	        foreach (var line in lines) Add(UnitParser.ParseLine(line, this));
 	    }
 
-	    public IEnumerable<string> DefaultUnits()
+	    public static IEnumerable<string> DefaultUnits()
 	    {
 	        return new[]
 	        {
@@ -84,51 +84,6 @@ namespace UnitMath
 	            "C = A*s", "Hz = 1/s"
 	        };
 	    }
-
-	    /// <summary> 
-	    /// Parse derived unit (ex. "N=kg*m/s^2")
-	    /// </summary> 
-        public Unit ParseLine(string line)
-		{
-			var data = line.Split('=').Select(s => s.Trim()).ToArray();
-
-            switch (data.Length)
-            {
-                case 0:
-                    return new Unit("");
-                case 1:
-                    if (data[0].Contains('*') || data[0].Contains('/')) return new Unit(Unit.UndefinedSymbol, 1, ParseUnits(data[0]));
-                    return Parse(data[0]);
-            }
-
-		    return new Unit(data[0], 1, ParseUnits(data[1]));
-		}
-
-	    /// <summary> 
-	    /// Parse unit from string (ex. "m^2")
-	    /// </summary> 
-        public Unit Parse(string text)
-		{
-			var data = text.Trim().Split('^');
-			var symbol = data[0] == "1" ? "" : data[0];
-			var power = decimal.Parse(data.Length == 2 ? data[1] : "1");
-
-			Unit u;
-			return TryGetValue(symbol, out u) ? u.ChangePower(power) : new Unit(symbol, power);
-		}
-
-	    /// <summary> 
-	    /// Parse multiple units from string (ex. "m^2*s*^3/kg")
-	    /// </summary> 
-        public IEnumerable<Unit> ParseUnits(string text)
-		{
-			text = new string(text.Where(c => c != ' ' && c != '\t' && c != '(' && c != ')').ToArray());
-			
-			return text.Split('/')
-					   .Select(s => s.Split('*').Select(Parse))
-					   .Select((e, i) => i == 1 ? Unit.Invert(e) : e)
-					   .SelectMany(e => e);
-		}
 
 	    public IEnumerator<KeyValuePair<string, Unit>> GetEnumerator()
 	    {
