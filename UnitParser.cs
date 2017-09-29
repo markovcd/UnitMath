@@ -44,7 +44,7 @@ namespace UnitMath
 
 	        if (data.Length == 1)
 	        {
-		        if (data[0].Contains('*') || data[0].Contains('/')) return new Unit(Unit.UndefinedSymbol, 1, ParseUnits(data[0], dict));
+	        	if (data[0].Contains('*') || data[0].Contains('/')) return new Unit(data[0], 1, ParseUnits(data[0], dict));
 		        return Parse(data[0], dict);
 	        }
 
