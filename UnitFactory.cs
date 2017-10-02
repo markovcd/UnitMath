@@ -26,11 +26,25 @@ namespace UnitMath
 	        set { _dictionary[key] = value; }
 	    }
 
-        public UnitFactory(bool addDefaultUnits = true)
+	    public static readonly IEnumerable<string> DefaultLines =
+	        new[]
+	        {
+	            "", "kg", "m", "s", "A", "K", "mol", "Hz = 1/s",
+	            "N = kg*m/s^2", "J = N*m", "W = J/s", "C = A*s",
+	            "V = W/A", "F = C/V", "Ω = V/A", "Wb = J/A",
+	            "S = 1/Ω", "Pa = N/(m^2)", "Pas = Pa*s"
+	        };
+
+	    public static UnitFactory Default()
+	    {
+	        var uf = new UnitFactory();
+	        uf.LoadFromLines(DefaultLines);
+	        return uf;
+	    }
+
+        public UnitFactory()
 	    {
 	        _dictionary = new Dictionary<string, Unit>();
-
-	        if (addDefaultUnits) LoadFromLines(DefaultUnits());
 	    }
 
         public void Add(Unit u)
@@ -71,18 +85,6 @@ namespace UnitMath
 	    public void LoadFromLines(IEnumerable<string> lines)
 	    {
 	        foreach (var line in lines) Add(UnitParser.ParseLine(line, this));
-	    }
-
-	    public static IEnumerable<string> DefaultUnits()
-	    {
-	        return new[]
-	        {
-	            "", "kg", "m", "s", "A", "K", "mol",
-	            "N = kg*m/s^2", "J = kg*m^2/s^2", "W = kg*m^2/s^3",
-	            "V = kg*m^2/(s^3*A^1)", "F = s^4*A^2/(kg*m^2)", "Ω = kg*m^2/(s^3*A^2)",
-	            "S = s^3*A^2/(kg*m^2)", "Pa = N/(m^2)", "Pas = kg(m*s)",
-	            "C = A*s", "Hz = 1/s"
-	        };
 	    }
 
 	    public IEnumerator<KeyValuePair<string, Unit>> GetEnumerator()

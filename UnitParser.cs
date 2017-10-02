@@ -18,7 +18,7 @@ namespace UnitMath
 			var symbol = data[0] == "1" ? "" : data[0];
 			var power = decimal.Parse(data.Length == 2 ? data[1] : "1");
 			
-			if (dict != null && dict.ContainsKey(symbol)) return dict[symbol];
+			if (dict != null && dict.ContainsKey(symbol)) return dict[symbol].ChangePower(power);
 			return new Unit(symbol, power);
 		}
 
@@ -32,7 +32,8 @@ namespace UnitMath
         	return text.Split('/')
         			   .Select(s => s.Split('*').Select(s2 => Parse(s2, dict)))
         			   .Select((e, i) => i == 1 ? Unit.Invert(e) : e)
-        			   .SelectMany(e => e);
+        			   .SelectMany(e => e)
+                       .Where(u => u.Symbol != "");
 		}
         
         /// <summary> 
@@ -40,15 +41,13 @@ namespace UnitMath
 	    /// </summary> 
         public static Unit ParseLine(string line, IDictionary<string, Unit> dict = null)
 		{
-			var data = line.Split('=').Select(s => s.Trim()).ToArray();
 
-	        if (data.Length == 1)
-	        {
-	        	if (data[0].Contains('*') || data[0].Contains('/')) return new Unit(data[0], 1, ParseUnits(data[0], dict));
-		        return Parse(data[0], dict);
-	        }
+            var data = line.Split('=').Select(s => s.Trim()).ToArray();
 
-		    return new Unit(data[0], 1, ParseUnits(data[1], dict));
+            if (data.Length > 2) throw new InvalidOperationException("Can't have multiple equal signs in statement.");
+		    if (data.Length == 2) return new Unit(data[0], 1, ParseUnits(data[1], dict));
+		    if (data[0].Contains('*') || data[0].Contains('/')) return new Unit(data[0], 1, ParseUnits(data[0], dict));
+		    return Parse(data[0], dict);
 		}
 		
 	}

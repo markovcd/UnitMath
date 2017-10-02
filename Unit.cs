@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 
 namespace UnitMath
 {
@@ -20,9 +21,13 @@ namespace UnitMath
 		    Symbol = symbol;
 		    Power = power;
             
-		    _units = units.OrderBy(u => u.Symbol).OrderByDescending(u => u.Power) ?? Enumerable.Empty<Unit>();
-			_hashCode = GetHashCode(this);
+		    _units = units ?? Enumerable.Empty<Unit>();
+		    _units = DefaultOrder( _units);
+
+            _hashCode = GetHashCode(this);
 		}
+
+	    public Unit(string symbol, decimal power = 1, params Unit[] units) : this(symbol, power, (IEnumerable<Unit>)units) { }
 
 		public Unit ChangePower(decimal power)
 		{
@@ -33,6 +38,16 @@ namespace UnitMath
 		{
 		    return units.Select(u => new Unit(u.Symbol, u.Power * newPower / oldPower, ChangePower(u, oldPower, newPower)));
 		}
+
+	    public Unit ChangeSymbol(string symbol)
+	    {
+	        return ChangeSymbol(this, symbol);
+	    }
+
+	    public static Unit ChangeSymbol(Unit u, string symbol)
+	    {
+	        return new Unit(symbol, u.Power, u);
+	    }
 		
 		public static string Aggregate(IEnumerable<Unit> units)
 		{
@@ -114,10 +129,10 @@ namespace UnitMath
 	    
 	    public static IEnumerable<Unit> Multiply(IEnumerable<Unit> units)
 	    {
-	    	return units.GroupBy(u => u.Symbol)
-	    				.Select(g => new Unit(g.Key, g.Sum(u => u.Power), Multiply(g.SelectMany(u => u))))
-	    				.OrderBy(u => u.Symbol)
-	    				.OrderByDescending(u => u.Power);
+	    	return DefaultOrder(units.GroupBy(u => u.Symbol)
+	    				             .Select(g => new Unit(g.Key, 
+                                                           g.Sum(u => u.Power), 
+                                                           Multiply(g.SelectMany(u => u)))));
 	    }
 	    
 	    public static IEnumerable<Unit> Invert(IEnumerable<Unit> units)
@@ -130,12 +145,13 @@ namespace UnitMath
 	    	return new Unit(Symbol, -Power, Invert(this));
 	    }
 
-	    public static Unit GetCommon(Unit u1, Unit u2)
+	    public static Unit GetCommon2(Unit u1, Unit u2)
 	    {
 	        if (u1 == u2) return u1;
+	        if (u1 == null || u2 == null) return null;
 
-            var hash1 = new HashSet<Unit>(u1);
-	    	var hash2 = new HashSet<Unit>(u2);
+            var hash1 = new HashSet<Unit>(u1.Any() ? u1 : new[] { u1 }.AsEnumerable());
+	    	var hash2 = new HashSet<Unit>(u2.Any() ? u2 : new[] { u2 }.AsEnumerable());
 	    	
 	    	var common = hash1.Intersect(hash2);
 	    	var notCommon1 = Multiply(hash1.Except(common));
@@ -144,6 +160,54 @@ namespace UnitMath
 	    	if (GetHashCode(notCommon1) != GetHashCode(notCommon2)) return null;
 	    	
 	    	return new Unit("", 1, notCommon1.Concat(common));
+	    }
+
+	    public static bool ShallowEquals(Unit u1, Unit u2)
+	    {
+	        return u1.Symbol == u2.Symbol && u1.Power == u2.Power;
+	    }
+
+	    public static IEnumerable<Unit> DefaultOrder(IEnumerable<Unit> units)
+	    {
+	        return units.OrderBy(u => u.Symbol).OrderByDescending(u => u.Power);
+	    }
+
+	    public static IEnumerable<Unit> GetCommon(Unit u1, Unit u2)
+	    {
+	        if (ShallowEquals(u1, u2))
+	        {
+	            yield return u1;
+                yield break;
+	        }
+
+	        var flat1 = DefaultOrder(Flatten(u1));
+	        var flat2 = DefaultOrder(Flatten(u2));
+
+	        if (GetHashCode(flat1) != GetHashCode(flat2))
+	        {
+	            var multiplied1 = Multiply(flat1);
+	            var multiplied2 = Multiply(flat2);
+
+	            if (GetHashCode(multiplied1) != GetHashCode(multiplied2)) yield break;
+
+	            foreach (var u in multiplied1) yield return u;
+	            
+                yield break;
+	        }
+
+	        var stack1 = new Stack<Unit>(u1);
+            var stack2 = new Stack<Unit>();
+
+	        var common = new HashSet<Unit>(u1);
+	        common.IntersectWith(u2);
+
+	        foreach (var u in common) yield return u;
+	        
+
+	        foreach (var u12 in u2)
+	        {
+                if (ShallowEquals(stack1.Peek(), u12)) stack2.Push(stack1.Pop());
+	        }
 	    }
 	 
 	    
@@ -206,7 +270,10 @@ namespace UnitMath
 
 	    public static int GetHashCode(IEnumerable<Unit> units)
 	    {
-	        return units.Any() ? units.Aggregate(1, (current, u) => 31 * current + u.GetHashCode()) : 0;
+	        unchecked
+	        {
+	            return units.Any() ? units.Aggregate(1, (current, u) => 31 * current + u.GetHashCode()) : 0;
+	        }
 	    }
 
 		#endregion
